@@ -3,6 +3,8 @@ CONFIG += c++1z
 CONFIG -= app_bundle
 CONFIG -= qt
 
+# For dynamic linking
+LIBS += -ld
 # FreeImage
 LIBS += -lfreeimage
 # LibSndfile
@@ -28,7 +30,8 @@ SOURCES += \
     Wrappers/Graphics/GifWrapper.cpp \
     Wrappers/Graphics/ImageWrapper.cpp \
     Wrappers/Graphics/S3Wrapper.cpp \
-    Wrappers/Graphics/WebpWrapper.cpp
+    Wrappers/Graphics/WebpWrapper.cpp \
+    Wrappers/Script/DynamicLibrary.cpp
 
 HEADERS += \
     Io/FIO.hpp \
@@ -45,4 +48,8 @@ HEADERS += \
     Wrappers/Graphics/ImageWrapper.hpp \
     Wrappers/Graphics/S3Wrapper.hpp \
     Wrappers/Graphics/Vector.hpp \
-    Wrappers/Graphics/WebpWrapper.hpp
+    Wrappers/Graphics/WebpWrapper.hpp \
+    Wrappers/Script/DynamicLibrary.hpp
+
+DISTFILES += \
+	README.md
