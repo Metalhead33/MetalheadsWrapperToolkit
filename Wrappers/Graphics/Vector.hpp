@@ -1,6 +1,7 @@
 #ifndef MHVECTOR_HPP
 #define MHVECTOR_HPP
-namespace Mh {
+namespace MH33 {
+namespace GFX {
 #if defined (_MSC_VER)
 #pragma pack(push, 1)
 #define PACKED
@@ -24,5 +25,6 @@ template <typename T> struct PACKED Vec3
 #if defined (_MSC_VER)
 #pragma pack(pop)
 #endif
+}
 }
 #endif // MHVECTOR_HPP

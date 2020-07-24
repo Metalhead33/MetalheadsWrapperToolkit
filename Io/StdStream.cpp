@@ -7,123 +7,103 @@
 
 #include "StdStream.hpp"
 
-
-StdStream::StdStream()
-{
-	active = false;
-	path = "";
-	chandle = 0;
+StdStream::StdStream( ) : chandle( nullptr, fclose ) {
+    active = false;
+    path = "";
+    chandle = nullptr;
 }
 
-StdStream::StdStream(const std::string& newpath, bool ro)
-{
-	chandle = 0;
-	open(newpath,ro);
+StdStream::StdStream( StdStream &&mov )
+    : path( std::move( mov.path ) ), chandle( std::move( mov.chandle ) ),
+      active( mov.active ) {
+    mov.active = false;
 }
 
-StdStream::~StdStream()
-{
-	close();
-}
-Abstract::byteBuffer StdStream::loadIntoBuffer()
-{
-	Abstract::byteBuffer temp;
-	temp.resize(size());
-	read(temp.data(),size());
-	return temp;
-}
-std::string StdStream::stringize()
-{
-	auto buff = loadIntoBuffer();
-	return std::string(reinterpret_cast<const char*>(buff.data()),buff.size());
+void StdStream::operator=( StdStream &&mov ) {
+    path = std::move( mov.path );
+    chandle = std::move( mov.chandle );
+    active = mov.active;
+    mov.active = false;
 }
 
-int64_t StdStream::read(void* data, int64_t size)
-{
-	if(!active) return -1;
-	else return (int64_t)fread(data,1,size,chandle);
+StdStream::StdStream( const std::string &newpath, bool ro )
+    : path( newpath ),
+      chandle( fopen( newpath.c_str( ), ( ro ) ? "rb" : "r+b" ), fclose ) {
+    if ( chandle )
+        active = true;
 }
 
-int64_t StdStream::seek(int64_t position)
-{
-	if(!active) return -1;
-	else return (int64_t)fseek(chandle,position,SEEK_SET);
+StdStream::~StdStream( ) {}
+Abstract::byteBuffer StdStream::loadIntoBuffer( ) {
+    Abstract::byteBuffer temp;
+    temp.resize( size( ) );
+    read( temp.data( ), size( ) );
+    return temp;
+}
+std::string StdStream::stringize( ) {
+    auto buff = loadIntoBuffer( );
+    return std::string( reinterpret_cast< const char * >( buff.data( ) ),
+                        buff.size( ) );
 }
 
-int64_t StdStream::tell()
-{
-	if(!active) return -1;
-	else return (int64_t)ftell(chandle);
+int64_t StdStream::read( void *data, int64_t size ) {
+    if ( !active )
+        return -1;
+    else
+        return int64_t( fread( data, 1, size, chandle.get( ) ) );
 }
 
-int64_t StdStream::size()
-{
-	if(!active) return -1;
-	else
-	{
-		int64_t pos = (int64_t)ftell(chandle);
-		fseek(chandle,0,SEEK_END);
-		int64_t size = (int64_t)ftell(chandle);
-		fseek(chandle,pos,SEEK_SET);
-		return size;
-	}
+int64_t StdStream::seek( int64_t position, SeekPos whence ) {
+    if ( !active )
+        return -1;
+    switch ( whence ) {
+    case SeekPos::SET:
+        return fseek( chandle.get( ), position, SEEK_SET );
+        break;
+    case SeekPos::CUR:
+        return fseek( chandle.get( ), position, SEEK_CUR );
+        break;
+    case SeekPos::END:
+        return fseek( chandle.get( ), position, SEEK_END );
+        break;
+    }
+    return -1;
 }
 
-int64_t StdStream::write(const void* data, int64_t size)
-{
-	if(!active) return -1;
-	else return (int64_t)fwrite(data,1,size,chandle);
+int64_t StdStream::tell( ) {
+    if ( !active )
+        return -1;
+    else
+        return (int64_t)ftell( chandle.get( ) );
 }
 
-std::string StdStream::GetPath()
-{
-	return path;
+int64_t StdStream::size( ) {
+    if ( !active )
+        return -1;
+    else {
+        int64_t pos = (int64_t)ftell( chandle.get( ) );
+        fseek( chandle.get( ), 0, SEEK_END );
+        int64_t size = (int64_t)ftell( chandle.get( ) );
+        fseek( chandle.get( ), pos, SEEK_SET );
+        return size;
+    }
 }
 
-void StdStream::close()
-{
-	if(active) fclose(chandle);
-	chandle = 0;
-	path = "";
-	active = false;
+int64_t StdStream::write( const void *data, int64_t size ) {
+    if ( !active )
+        return -1;
+    else
+        return (int64_t)fwrite( data, 1, size, chandle.get( ) );
 }
 
-bool StdStream::IsActive()
-{
-	return active;
-}
+std::string StdStream::GetPath( ) { return path; }
 
-bool StdStream::open(const std::string &newpath, bool ro)
-{
-	if(chandle) fclose(chandle);
-	if(ro) chandle = fopen(newpath.c_str(),"rb");
-	else
-	{
-		chandle = fopen(newpath.c_str(),"r+b");
-		if(!chandle) chandle = fopen(newpath.c_str(),"wb");
-	}
-	if(chandle)
-	{
-		path = newpath;
-		active = true;
-		return true;
-	}
-	else
-	{
-		path = "";
-		active = false;
-		return false;
-	}
+bool StdStream::IsActive( ) { return active; }
+
+char StdStream::getc( ) { return fgetc( chandle.get( ) ); }
+Abstract::sFIO StdStream::createReader( const std::string &newpath ) {
+    return Abstract::sFIO( new StdStream( newpath, true ) );
 }
-char StdStream::getc()
-{
-	return fgetc(chandle);
-}
-Abstract::sFIO StdStream::createReader(const std::string &newpath)
-{
-	return Abstract::sFIO(new StdStream(newpath,true));
-}
-Abstract::sFIO StdStream::createWriter(const std::string &newpath)
-{
-	return Abstract::sFIO(new StdStream(newpath,false));
+Abstract::sFIO StdStream::createWriter( const std::string &newpath ) {
+    return Abstract::sFIO( new StdStream( newpath, false ) );
 }

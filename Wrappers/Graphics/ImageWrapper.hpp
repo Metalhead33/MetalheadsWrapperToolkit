@@ -1,7 +1,8 @@
 #ifndef MHIMAGEWRAPPER_HPP
 #define MHIMAGEWRAPPER_HPP
-#include "../Io/FIO.hpp"
-namespace Mh {
+#include "../../Io/FIO.hpp"
+namespace MH33 {
+namespace GFX {
 
 enum class ImageFormat : int {
 	UNKNOWN = 0,	//! unknown type
@@ -65,10 +66,12 @@ class ImageWrapper
 {
 private:
 	DEFINE_STRUCT(ImageWrapper_imp)
-	sImageWrapper_imp pimpl;
+	uImageWrapper_imp pimpl;
 public:
-	~ImageWrapper() = default;
+	~ImageWrapper();
 	ImageWrapper();
+	ImageWrapper(ImageWrapper_imp&& mov);
+	ImageWrapper(uImageWrapper_imp&& mov);
 	ImageWrapper( const ImageWrapper &cpy );
 	ImageWrapper( ImageWrapper &&mov );
 	ImageWrapper(void *bits, int width, int height, int pitch, unsigned bpp,
@@ -92,6 +95,7 @@ public:
 	unsigned getPitch() const;
 	unsigned getDIBSize() const;
 	unsigned getMemorySize() const;
+	ImageFormat getFormat() const;
 	// Image access getters
 	bool hasPixels( ) const;
 	bool hasThumbnail( ) const;
@@ -101,36 +105,37 @@ public:
 	void *getBytes( ) const;
 	void *getScanline( int scanline ) const;
 	// Conversions
-	bool convertTo4Bits() const;
-	bool convertTo8Bits() const;
-	bool convertToGreyscale() const;
-	bool convertTo16Bits555() const;
-	bool convertTo16Bits565() const;
-	bool convertTo24Bits() const;
-	bool convertTo32Bits() const;
-	bool quantizeXiaolinWu() const;
-	bool quantizeNeuQuant() const;
-	bool quantizeCarlsten() const;
-	bool threshold(unsigned char hold) const;
-	bool ditherFS() const;
-	bool ditherBayer4x4() const;
-	bool ditherBayer8x8() const;
-	bool ditherBayer16x16() const;
-	bool ditherCluster6x6() const;
-	bool ditherCluster8x8() const;
-	bool ditherCluster16x16() const;
-	bool convertToStandardType() const;
-	bool convertToFloat() const;
-	bool convertToRGBF() const;
-	bool convertToRGBAF() const;
-	bool convertToUINT16() const;
-	bool convertToRGB16() const;
-	bool convertToRGBA16() const;
-	bool tonemapDrago03(double gamma=2.2, double exposure=0.0) const;
-	bool tonemapReinhard05(double intensity=0.0, double contrast=0.0) const;
-	bool tonemapReinhard05Ex(double intensity=0.0, double contrast=0.0, double adaptation=1.0, double color_correction=0.0) const;
-	bool tonemapFattal02(double color_saturation=0.5, double attenuation=0.85) const;
+	ImageWrapper convertTo4Bits() const;
+	ImageWrapper convertTo8Bits() const;
+	ImageWrapper convertToGreyscale() const;
+	ImageWrapper convertTo16Bits555() const;
+	ImageWrapper convertTo16Bits565() const;
+	ImageWrapper convertTo24Bits() const;
+	ImageWrapper convertTo32Bits() const;
+	ImageWrapper quantizeXiaolinWu() const;
+	ImageWrapper quantizeNeuQuant() const;
+	ImageWrapper quantizeCarlsten() const;
+	ImageWrapper threshold(unsigned char hold) const;
+	ImageWrapper ditherFS() const;
+	ImageWrapper ditherBayer4x4() const;
+	ImageWrapper ditherBayer8x8() const;
+	ImageWrapper ditherBayer16x16() const;
+	ImageWrapper ditherCluster6x6() const;
+	ImageWrapper ditherCluster8x8() const;
+	ImageWrapper ditherCluster16x16() const;
+	ImageWrapper convertToStandardType() const;
+	ImageWrapper convertToFloat() const;
+	ImageWrapper convertToRGBF() const;
+	ImageWrapper convertToRGBAF() const;
+	ImageWrapper convertToUINT16() const;
+	ImageWrapper convertToRGB16() const;
+	ImageWrapper convertToRGBA16() const;
+	ImageWrapper tonemapDrago03(double gamma=2.2, double exposure=0.0) const;
+	ImageWrapper tonemapReinhard05(double intensity=0.0, double contrast=0.0) const;
+	ImageWrapper tonemapReinhard05Ex(double intensity=0.0, double contrast=0.0, double adaptation=1.0, double color_correction=0.0) const;
+	ImageWrapper tonemapFattal02(double color_saturation=0.5, double attenuation=0.85) const;
 };
 
+}
 }
 #endif // MHIMAGEWRAPPER_HPP

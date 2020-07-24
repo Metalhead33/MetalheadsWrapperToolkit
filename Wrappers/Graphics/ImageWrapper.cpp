@@ -1,4 +1,4 @@
-#include "MhImageWrapper.hpp"
+#include "ImageWrapper.hpp"
 extern "C" {
 #include <FreeImage.h>
 }
@@ -11,54 +11,57 @@ long ImageTell( void *handle );
 static FreeImageIO AbstractFreadImgio = {ImageRead, ImageWrite, ImageSeek,
 					 ImageTell};
 
-namespace Mh {
+namespace MH33 {
+namespace GFX {
 
 	struct ImageWrapper::ImageWrapper_imp {
-	typedef std::shared_ptr< FIBITMAP > ContainerType;
-	std::shared_ptr< FIBITMAP > container;
+		typedef std::unique_ptr< FIBITMAP, decltype (&FreeImage_Unload) > ContainerType;
+	ContainerType container;
+	ImageFormat format;
 	~ImageWrapper_imp( ) = default;
-	ImageWrapper_imp( ) : container( nullptr ) { ; }
-	ImageWrapper_imp( const ContainerType &cpy ) : container( cpy ) { ; }
+	ImageWrapper_imp( ) : container( nullptr,FreeImage_Unload), format(ImageFormat::UNKNOWN) {  }
+	ImageWrapper_imp( ContainerType &&cpy ) : container( std::move(cpy) ) { format = ImageFormat(FreeImage_GetImageType(container.get())); }
 	ImageWrapper_imp( FIBITMAP *cpy )
 		: container( FreeImage_Clone( cpy ), FreeImage_Unload ) {
-		;
+		format = ImageFormat(FreeImage_GetImageType(container.get()));
 	}
 	ImageWrapper_imp( const ImageWrapper_imp &cpy )
 		: container( FreeImage_Clone( cpy.container.get( ) ),
-			 FreeImage_Unload ) {
-		;
+					FreeImage_Unload ), format(cpy.format) {
+
 	}
 	ImageWrapper_imp( ImageWrapper_imp &&mov )
-		: container( mov.container ) {
+		: container( std::move(mov.container) ), format(mov.format) {
 		mov.container = nullptr;
 	}
 	void operator=( const ImageWrapper_imp &cpy ) {
 		this->container = ContainerType(
 		FreeImage_Clone( cpy.container.get( ) ), FreeImage_Unload );
+		this->format = cpy.format;
 	}
 	void operator=( ImageWrapper_imp &&mov ) {
-		this->container = mov.container;
-		mov.container = nullptr;
+		this->container = std::move(mov.container);
+		this->format = mov.format;
 	}
 	ImageWrapper_imp( int width, int height, int bpp, unsigned red_mask=0, unsigned green_mask=0, unsigned blue_mask=0 )
 		: container( FreeImage_Allocate( width, height, bpp, red_mask, green_mask, blue_mask ),
-			 FreeImage_Unload ) {
-		;
+					FreeImage_Unload ), format(ImageFormat::BITMAP) {
+
 	}
 	ImageWrapper_imp( ImageFormat typus, int width, int height,
 			  int bpp = 8, unsigned red_mask=0, unsigned green_mask=0, unsigned blue_mask=0 )
 		: container( FreeImage_AllocateT( FREE_IMAGE_TYPE(typus), width, height, bpp, red_mask, green_mask, blue_mask),
-			 FreeImage_Unload ) {
-		;
+					FreeImage_Unload ), format(typus) {
+
 	}
 	ImageWrapper_imp( const char *path )
 		: container( FreeImage_Load( FreeImage_GetFileType( path ), path ),
 			 FreeImage_Unload ) {
-		;
+		format = ImageFormat(FreeImage_GetImageType(container.get()));
 	}
 	ImageWrapper_imp( ImageFileType typus, const char *path )
 		: container( FreeImage_Load( FREE_IMAGE_FORMAT(typus), path ), FreeImage_Unload ) {
-		;
+		format = ImageFormat(FreeImage_GetImageType(container.get()));
 	}
 	ImageWrapper_imp( Abstract::FIO &handle )
 		: container(
@@ -66,13 +69,13 @@ namespace Mh {
 						&AbstractFreadImgio, &handle ),
 						&AbstractFreadImgio, &handle ),
 		  FreeImage_Unload ) {
-		;
+		format = ImageFormat(FreeImage_GetImageType(container.get()));
 	}
 	ImageWrapper_imp( ImageFileType typus, Abstract::FIO &handle )
 		: container( FreeImage_LoadFromHandle( FREE_IMAGE_FORMAT(typus), &AbstractFreadImgio,
 						   &handle ),
-			 FreeImage_Unload ) {
-		;
+					FreeImage_Unload ) {
+		format = ImageFormat(FreeImage_GetImageType(container.get()));
 	}
 	ImageWrapper_imp(void *bits, int width, int height, int pitch, unsigned bpp = 24,
 					 unsigned red_mask = FI_RGBA_RED_MASK,
@@ -82,7 +85,7 @@ namespace Mh {
 		: container( FreeImage_ConvertFromRawBits(static_cast<BYTE*>(bits),width,height,pitch,bpp,
 												  red_mask,green_mask,blue_mask,topdown)
 					 , FreeImage_Unload ) {
-		;
+		format = ImageFormat(FreeImage_GetImageType(container.get()));
 	}
 	bool save( ImageFileType format, const char *path ) const {
 		if ( container ) {
@@ -98,10 +101,7 @@ namespace Mh {
 		return false;
 	}
 	ImageFormat getImageType( ) const {
-		if ( container )
-		return ImageFormat(FreeImage_GetImageType( container.get( ) ));
-		else
-		return ImageFormat(FIT_UNKNOWN);
+		return format;
 	}
 	unsigned getColorsUsed( ) const {
 		if ( container )
@@ -572,72 +572,87 @@ namespace Mh {
 	bool isValid( ) const { return container != nullptr; }
 	};
 
+	ImageWrapper::~ImageWrapper() = default;
+
 	ImageWrapper::ImageWrapper()
 		: pimpl(nullptr)
 	{
-		;
+
+	}
+
+	ImageWrapper::ImageWrapper(ImageWrapper_imp &&mov)
+		: pimpl(new ImageWrapper_imp(std::move(mov)))
+	{
+
+	}
+
+	ImageWrapper::ImageWrapper(uImageWrapper_imp &&mov)
+		: pimpl(std::move(mov))
+	{
+
 	}
 	ImageWrapper::ImageWrapper( const ImageWrapper &cpy )
 		: pimpl((cpy.pimpl) ? new ImageWrapper_imp(*cpy.pimpl) : nullptr)
 	{
-		;
+
 	}
 	ImageWrapper::ImageWrapper( ImageWrapper &&mov )
-		: pimpl(mov.pimpl)
+		: pimpl(std::move(mov.pimpl))
 	{
 		mov.pimpl = nullptr;
-	}
-	void ImageWrapper::operator=( const ImageWrapper &cpy )
-	{
-		pimpl = (cpy.pimpl) ? sImageWrapper_imp(new ImageWrapper_imp(*cpy.pimpl)) : nullptr;
 	}
 	void ImageWrapper::operator=( ImageWrapper &&mov )
 	{
-		this->pimpl = mov.pimpl;
-		mov.pimpl = nullptr;
+		this->pimpl = std::move(mov.pimpl);
 	}
 	ImageWrapper::ImageWrapper(void *bits, int width, int height, int pitch, unsigned bpp,
 				unsigned red_mask, unsigned green_mask, unsigned blue_mask,
 				 bool topdown)
 		: pimpl(new ImageWrapper_imp(bits,width,height,pitch,bpp,red_mask,green_mask,blue_mask,topdown))
 	{
-		;
+
 	}
 	ImageWrapper::ImageWrapper(void *bits, int width, int height, int pitch, unsigned bpp, bool topdown)
 		: pimpl(new ImageWrapper_imp(bits,width,height,pitch,bpp,
 									 FI_RGBA_RED_MASK,FI_RGBA_GREEN_MASK,FI_RGBA_BLUE_MASK,topdown))
 	{
-		;
+
+	}
+
+	void ImageWrapper::operator=(const ImageWrapper &cpy)
+	{
+		uImageWrapper_imp tmp((cpy.pimpl) ? new ImageWrapper_imp(*cpy.pimpl) : nullptr);
+		pimpl = std::move(tmp);
 	}
 	ImageWrapper::ImageWrapper(int width, int height, int bpp , unsigned red_mask, unsigned green_mask, unsigned blue_mask)
 		: pimpl(new ImageWrapper_imp(width,height,bpp,red_mask,green_mask,blue_mask))
 	{
-		;
+
 	}
 	ImageWrapper::ImageWrapper(ImageFormat typus, int width, int height, int bpp, unsigned red_mask, unsigned green_mask, unsigned blue_mask)
 		: pimpl(new ImageWrapper_imp(typus,width,height,bpp,red_mask,green_mask,blue_mask))
 	{
-		;
+
 	}
 	ImageWrapper::ImageWrapper( const char *path )
 		: pimpl(new ImageWrapper_imp(path))
 	{
-		;
+
 	}
 	ImageWrapper::ImageWrapper( ImageFileType typus, const char *path )
 		: pimpl(new ImageWrapper_imp(typus,path))
 	{
-		;
+
 	}
 	ImageWrapper::ImageWrapper( Abstract::FIO &handle )
 		: pimpl(new ImageWrapper_imp(handle))
 	{
-		;
+
 	}
 	ImageWrapper::ImageWrapper( ImageFileType typus, Abstract::FIO &handle )
 		: pimpl(new ImageWrapper_imp(typus,handle))
 	{
-		;
+
 	}
 
 	unsigned ImageWrapper::getColorsUsed( ) const {
@@ -650,391 +665,102 @@ namespace Mh {
 	unsigned ImageWrapper::getPitch( ) const { return pimpl->getPitch( ); }
 	unsigned ImageWrapper::getDIBSize( ) const { return pimpl->getDIBSize( ); }
 	unsigned ImageWrapper::getMemorySize( ) const {
-	return pimpl->getMemorySize( );
+		return pimpl->getMemorySize( );
 	}
-
-	bool ImageWrapper::convertTo4Bits( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertTo4Bits( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageFormat ImageWrapper::getFormat() const
+	{
+		return pimpl->getImageType();
 	}
+	ImageWrapper ImageWrapper::convertTo4Bits( ) const {
+		return ImageWrapper(pimpl->convertTo4Bits( ));
 	}
-	bool ImageWrapper::convertTo8Bits( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertTo8Bits( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageWrapper ImageWrapper::convertTo8Bits( ) const {
+	return ImageWrapper(pimpl->convertTo8Bits( ));
 	}
+	ImageWrapper ImageWrapper::convertToGreyscale( ) const {
+	return ImageWrapper(pimpl->convertToGreyscale( ));
 	}
-	bool ImageWrapper::convertToGreyscale( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertToGreyscale( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageWrapper ImageWrapper::convertTo16Bits555( ) const {
+		return ImageWrapper(pimpl->convertTo16Bits555( ));
 	}
+	ImageWrapper ImageWrapper::convertTo16Bits565( ) const {
+		return ImageWrapper(pimpl->convertTo16Bits565( ));
 	}
-	bool ImageWrapper::convertTo16Bits555( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertTo16Bits555( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageWrapper ImageWrapper::convertTo24Bits( ) const {
+		return ImageWrapper(pimpl->convertTo24Bits( ));
 	}
+	ImageWrapper ImageWrapper::convertTo32Bits( ) const {
+		return ImageWrapper(pimpl->convertTo32Bits( ));
 	}
-	bool ImageWrapper::convertTo16Bits565( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertTo16Bits565( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageWrapper ImageWrapper::quantizeXiaolinWu( ) const {
+		return ImageWrapper(pimpl->quantizeXiaolinWu( ));
 	}
+	ImageWrapper ImageWrapper::quantizeNeuQuant( ) const {
+		return ImageWrapper(pimpl->quantizeNeuQuant( ));
 	}
-	bool ImageWrapper::convertTo24Bits( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertTo24Bits( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageWrapper ImageWrapper::quantizeCarlsten( ) const {
+		return ImageWrapper(pimpl->quantizeCarlsten( ));
 	}
+	ImageWrapper ImageWrapper::threshold( unsigned char hold ) const {
+		return ImageWrapper(pimpl->threshold(hold));
 	}
-	bool ImageWrapper::convertTo32Bits( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertTo32Bits( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageWrapper ImageWrapper::ditherFS( ) const {
+		return ImageWrapper(pimpl->ditherFS( ));
 	}
+	ImageWrapper ImageWrapper::ditherBayer4x4( ) const {
+		return ImageWrapper(pimpl->ditherBayer4x4( ));
 	}
-	bool ImageWrapper::quantizeXiaolinWu( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->quantizeXiaolinWu( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageWrapper ImageWrapper::ditherBayer8x8( ) const {
+		return ImageWrapper(pimpl->ditherBayer8x8( ));
 	}
+	ImageWrapper ImageWrapper::ditherBayer16x16( ) const {
+		return ImageWrapper(pimpl->ditherBayer16x16( ));
 	}
-	bool ImageWrapper::quantizeNeuQuant( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->quantizeNeuQuant( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageWrapper ImageWrapper::ditherCluster6x6( ) const {
+		return ImageWrapper(pimpl->ditherCluster6x6( ));
 	}
+	ImageWrapper ImageWrapper::ditherCluster8x8( ) const {
+		return ImageWrapper(pimpl->ditherCluster8x8( ));
 	}
-	bool ImageWrapper::quantizeCarlsten( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->quantizeCarlsten( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageWrapper ImageWrapper::ditherCluster16x16( ) const {
+		return ImageWrapper(pimpl->ditherCluster16x16( ));
 	}
+	ImageWrapper ImageWrapper::convertToStandardType( ) const {
+		return ImageWrapper(pimpl->convertToStandardType( ));
 	}
-	bool ImageWrapper::threshold( unsigned char hold ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->threshold( hold );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageWrapper ImageWrapper::convertToFloat( ) const {
+		return ImageWrapper(pimpl->convertToFloat( ));
 	}
+	ImageWrapper ImageWrapper::convertToRGBF( ) const {
+		return ImageWrapper(pimpl->convertToRGBF( ));
 	}
-	bool ImageWrapper::ditherFS( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->ditherFS( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageWrapper ImageWrapper::convertToRGBAF( ) const {
+		return ImageWrapper(pimpl->convertToRGBAF( ));
 	}
+	ImageWrapper ImageWrapper::convertToUINT16( ) const {
+		return ImageWrapper(pimpl->convertToUINT16( ));
 	}
-	bool ImageWrapper::ditherBayer4x4( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->ditherBayer4x4( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageWrapper ImageWrapper::convertToRGB16( ) const {
+		return ImageWrapper(pimpl->convertToRGB16( ));
 	}
+	ImageWrapper ImageWrapper::convertToRGBA16( ) const {
+		return ImageWrapper(pimpl->convertToRGBA16( ));
 	}
-	bool ImageWrapper::ditherBayer8x8( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->ditherBayer8x8( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+	ImageWrapper ImageWrapper::tonemapDrago03( double gamma, double exposure ) const {
+		return ImageWrapper(pimpl->tonemapDrago03(gamma,exposure));
 	}
-	}
-	bool ImageWrapper::ditherBayer16x16( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->ditherBayer16x16( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
-	}
-	}
-	bool ImageWrapper::ditherCluster6x6( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->ditherCluster6x6( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
-	}
-	}
-	bool ImageWrapper::ditherCluster8x8( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->ditherCluster8x8( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
-	}
-	}
-	bool ImageWrapper::ditherCluster16x16( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->ditherCluster16x16( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
-	}
-	}
-	bool ImageWrapper::convertToStandardType( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertToStandardType( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
-	}
-	}
-	bool ImageWrapper::convertToFloat( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertToFloat( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
-	}
-	}
-	bool ImageWrapper::convertToRGBF( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertToRGBF( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
-	}
-	}
-	bool ImageWrapper::convertToRGBAF( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertToRGBAF( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
-	}
-	}
-	bool ImageWrapper::convertToUINT16( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertToUINT16( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
-	}
-	}
-	bool ImageWrapper::convertToRGB16( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertToRGB16( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
-	}
-	}
-	bool ImageWrapper::convertToRGBA16( ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->convertToRGBA16( );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
-	}
-	}
-	bool ImageWrapper::tonemapDrago03( double gamma, double exposure ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->tonemapDrago03( gamma, exposure );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
-	}
-	}
-	bool ImageWrapper::tonemapReinhard05( double intensity,
+	ImageWrapper ImageWrapper::tonemapReinhard05( double intensity,
 					  double contrast ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->tonemapReinhard05( intensity, contrast );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+		return ImageWrapper(pimpl->tonemapReinhard05(intensity,contrast));
 	}
-	}
-	bool ImageWrapper::tonemapReinhard05Ex( double intensity, double contrast,
+	ImageWrapper ImageWrapper::tonemapReinhard05Ex( double intensity, double contrast,
 						double adaptation,
 						double color_correction ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp = pimpl->tonemapReinhard05Ex(
-		intensity, contrast, adaptation, color_correction );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
+		return ImageWrapper(pimpl->tonemapReinhard05Ex(intensity,contrast,adaptation,color_correction));
 	}
-	}
-	bool ImageWrapper::tonemapFattal02( double color_saturation,
+	ImageWrapper ImageWrapper::tonemapFattal02( double color_saturation,
 					double attenuation ) const {
-	if ( !pimpl )
-		return false;
-	if ( !pimpl->isValid( ) )
-		return false;
-	ImageWrapper_imp tmp =
-		pimpl->tonemapFattal02( color_saturation, attenuation );
-	if ( !tmp.hasPixels( ) )
-		return false;
-	else {
-		*pimpl = std::move( tmp );
-		return true;
-	}
+		return ImageWrapper(pimpl->tonemapFattal02(color_saturation,attenuation));
 	}
 
 	bool ImageWrapper::hasPixels( ) const
@@ -1051,9 +777,8 @@ namespace Mh {
 	{
 		if(pimpl)
 		{
-			ImageWrapper tmp;
-			tmp.pimpl = sImageWrapper_imp(new ImageWrapper_imp(pimpl->copyThumbnail() ));
-			return tmp;
+			uImageWrapper_imp tmp(new ImageWrapper_imp(pimpl->copyThumbnail() ));
+			return ImageWrapper(std::move(tmp));
 		} else return ImageWrapper();
 	}
 	bool ImageWrapper::setThumbnail( const ImageWrapper &cpy ) const
@@ -1085,6 +810,7 @@ namespace Mh {
 		else return nullptr;
 	}
 
+} // Namespace GFX
 } // namespace Mh
 
 unsigned ImageRead( void *buffer, unsigned size, unsigned count,

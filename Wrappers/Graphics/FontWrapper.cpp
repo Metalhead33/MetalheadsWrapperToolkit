@@ -1,4 +1,4 @@
-#include "MhFontWrapper.hpp"
+#include "FontWrapper.hpp"
 extern "C" {
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -9,8 +9,8 @@ extern "C" {
 #include FT_STROKER_H
 }
 #include <stdexcept>
-#include "../Io/span.hpp"
-#include "MhVector.hpp"
+#include "../../Io/span.hpp"
+#include "Vector.hpp"
 
 unsigned long FontRead( FT_Stream stream, unsigned long offset,
 								unsigned char*  buffer, unsigned long count)
@@ -30,7 +30,8 @@ void FontClose(FT_Stream)
 	;
 }
 
-namespace Mh {
+namespace MH33 {
+namespace GFX {
 
 typedef std::shared_ptr<FT_LibraryRec_> Library;
 typedef std::shared_ptr<FT_FaceRec_> Face;
@@ -279,4 +280,5 @@ FontWrapper::FontWrapper()
 
 }
 
+}
 }

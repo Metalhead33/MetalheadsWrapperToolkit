@@ -4,7 +4,6 @@
 #include <iostream>
 #include <cstdint>
 #include <thread>
-#include <experimental/propagate_const>
 
 #define MIN(a,b)             (((a) < (b)) ? (a) : (b)) // min: Choose smaller of two scalars.
 #define MAX(a,b)             (((a) > (b)) ? (a) : (b)) // max: Choose greater of two scalars.
@@ -21,7 +20,6 @@
 	typedef std::shared_ptr< a > s##a; \
 	typedef std::weak_ptr< a > w##a; \
 	typedef std::unique_ptr< a > u##a; \
-	typedef std::experimental::propagate_const<std::unique_ptr< a >> pimpl##a;
 
 #define DEFINE_PTR2(s,a) typedef s::a *p##a; \
 	typedef std::shared_ptr< s::a > s##a; \
