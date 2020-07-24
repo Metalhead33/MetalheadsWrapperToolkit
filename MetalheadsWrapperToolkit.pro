@@ -26,7 +26,9 @@ SOURCES += \
     Wrappers/Audio/SoundfileWrapper.cpp \
     Wrappers/Graphics/FontWrapper.cpp \
     Wrappers/Graphics/GifWrapper.cpp \
-    Wrappers/Graphics/ImageWrapper.cpp
+    Wrappers/Graphics/ImageWrapper.cpp \
+    Wrappers/Graphics/S3Wrapper.cpp \
+    Wrappers/Graphics/WebpWrapper.cpp
 
 HEADERS += \
     Io/FIO.hpp \
@@ -41,4 +43,6 @@ HEADERS += \
     Wrappers/Graphics/FontWrapper.hpp \
     Wrappers/Graphics/GifWrapper.hpp \
     Wrappers/Graphics/ImageWrapper.hpp \
-    Wrappers/Graphics/Vector.hpp
+    Wrappers/Graphics/S3Wrapper.hpp \
+    Wrappers/Graphics/Vector.hpp \
+    Wrappers/Graphics/WebpWrapper.hpp
