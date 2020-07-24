@@ -25,6 +25,7 @@ SOURCES += \
     Wrappers/Audio/Resampler.cpp \
     Wrappers/Audio/SoundfileWrapper.cpp \
     Wrappers/Graphics/FontWrapper.cpp \
+    Wrappers/Graphics/GifWrapper.cpp \
     Wrappers/Graphics/ImageWrapper.cpp
 
 HEADERS += \
@@ -38,5 +39,6 @@ HEADERS += \
     Wrappers/Audio/SoundfileWrapper.hpp \
     Io/span.hpp \
     Wrappers/Graphics/FontWrapper.hpp \
+    Wrappers/Graphics/GifWrapper.hpp \
     Wrappers/Graphics/ImageWrapper.hpp \
     Wrappers/Graphics/Vector.hpp
