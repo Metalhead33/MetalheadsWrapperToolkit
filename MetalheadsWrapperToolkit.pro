@@ -2,8 +2,22 @@ TEMPLATE = lib
 CONFIG += c++1z
 CONFIG -= app_bundle
 CONFIG -= qt
-LIBS += -lfreeimage -lsndfile -lfreetype -lsamplerate -lopenmpt
+
+# FreeImage
+LIBS += -lfreeimage
+# LibSndfile
+LIBS += -lsndfile
+# LibSamplerate
+LIBS += -lsamplerate
+# OpenMPT
+LIBS += -lopenmpt
+# FreeType
+LIBS += -lfreetype
 INCLUDEPATH += "/usr/include/freetype2"
+# GIF
+LIBS += -lgif
+# WebP
+LIBS += -lwebp
 
 SOURCES += \
     Io/StdStream.cpp \
