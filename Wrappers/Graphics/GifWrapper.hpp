@@ -13,9 +13,10 @@ struct DecodedAnimation {
 	struct PixelRgba {
 		uint8_t r,g,b,a;
 	};
-	union {
+	union GifData {
 		std::vector<std::vector<PixelRgb>> variant24bit;
 		std::vector<std::vector<PixelRgba>> variant32bit;
+		~GifData() {}
 	} data;
 	unsigned width,height;
 	float delayTime;
