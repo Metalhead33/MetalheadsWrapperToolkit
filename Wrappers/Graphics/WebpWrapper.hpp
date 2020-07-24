@@ -35,13 +35,16 @@ private:
 	WebpWrapper(const WebpWrapper& cpy) = delete;
 	void operator=(const WebpWrapper& cpy) = delete;
 public:
-	WebpWrapper(const Abstract::sFIO& nio);
-	WebpWrapper(Abstract::sFIO&& nio);
+	WebpWrapper(const Abstract::sFIO& nio, bool demux = true);
+	WebpWrapper(const std::vector<uint8_t>& nio, bool demux = true);
+	WebpWrapper(std::vector<uint8_t>&& nio, bool demux = true);
 	WebpWrapper(WebpWrapper&& mov);
 	void operator=(WebpWrapper&& mov);
 	unsigned getWidth() const;
 	unsigned getHeight() const;
-	unsigned getImageCount() const;
+	size_t getImageCount() const;
+	bool isAnimated() const;
+	void decodeTo(DecodedWebp& target) const;
 };
 
 

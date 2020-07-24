@@ -260,5 +260,35 @@ void WEBP_DEMUX::decodeTo(DecodedWebp& target) const
 	}
 }
 
+WebpWrapper::WebpWrapper(const Abstract::sFIO& nio, bool demux)
+	: pimpl((demux) ? static_cast<WebpWrapper_imp*>(new WEBP_DEMUX(nio)) : static_cast<WebpWrapper_imp*>(new WEBP_DECODE(nio)))
+{
+
+}
+WebpWrapper::WebpWrapper(const std::vector<uint8_t>& nio, bool demux)
+	: pimpl((demux) ? static_cast<WebpWrapper_imp*>(new WEBP_DEMUX(nio)) : static_cast<WebpWrapper_imp*>(new WEBP_DECODE(nio)))
+{
+
+}
+WebpWrapper::WebpWrapper(std::vector<uint8_t>&& nio, bool demux)
+	: pimpl((demux) ? static_cast<WebpWrapper_imp*>(new WEBP_DEMUX(std::move(nio))) : static_cast<WebpWrapper_imp*>(new WEBP_DECODE(std::move(nio))))
+{
+
+}
+WebpWrapper::WebpWrapper(WebpWrapper&& mov)
+	: pimpl(std::move(mov.pimpl))
+{
+
+}
+void WebpWrapper::operator=(WebpWrapper&& mov)
+{
+	this->pimpl = std::move(mov.pimpl);
+}
+unsigned WebpWrapper::getWidth() const { return pimpl->getWidth(); }
+unsigned WebpWrapper::getHeight() const { return pimpl->getHeight(); }
+size_t WebpWrapper::getImageCount() const { return pimpl->getImageCount(); }
+bool WebpWrapper::isAnimated() const { return pimpl->isAnimated(); }
+void WebpWrapper::decodeTo(DecodedWebp& target) const { pimpl->decodeTo(target); }
+
 }
 }
