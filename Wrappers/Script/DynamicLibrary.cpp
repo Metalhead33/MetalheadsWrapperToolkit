@@ -1,4 +1,7 @@
 #include "DynamicLibrary.hpp"
+namespace MH33 {
+namespace Script {
+
 
 DynamicLibrary::DynamicLibrary()
 	: libPriv(nullptr,nullptr)
@@ -42,4 +45,6 @@ void *DynamicLibrary::getFunction(const std::string &path) const
 bool DynamicLibrary::isValid() const
 {
 	return libPriv != nullptr;
+}
+}
 }

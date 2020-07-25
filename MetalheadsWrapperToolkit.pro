@@ -4,7 +4,7 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 # For dynamic linking
-LIBS += -ld
+LIBS += -ldl
 # FreeImage
 LIBS += -lfreeimage
 # LibSndfile
@@ -20,6 +20,9 @@ INCLUDEPATH += "/usr/include/freetype2"
 LIBS += -lgif
 # WebP
 LIBS += -lwebp
+# Mono
+LIBS += -L/usr/lib64/pkgconfig/../../lib64 -lmono-2.0 -lm -lrt -ldl -lpthread
+INCLUDEPATH += "/usr/lib64/pkgconfig/../../include/mono-2.0"
 
 SOURCES += \
     Io/StdStream.cpp \
@@ -31,7 +34,10 @@ SOURCES += \
     Wrappers/Graphics/ImageWrapper.cpp \
     Wrappers/Graphics/S3Wrapper.cpp \
     Wrappers/Graphics/WebpWrapper.cpp \
-    Wrappers/Script/DynamicLibrary.cpp
+    Wrappers/Script/DynamicLibrary.cpp \
+    Wrappers/Script/Mono/MonoAssembly.cpp \
+    Wrappers/Script/Mono/MonoContext.cpp \
+    Wrappers/Script/Mono/MonoImage.cpp
 
 HEADERS += \
     Io/FIO.hpp \
@@ -49,7 +55,10 @@ HEADERS += \
     Wrappers/Graphics/S3Wrapper.hpp \
     Wrappers/Graphics/Vector.hpp \
     Wrappers/Graphics/WebpWrapper.hpp \
-    Wrappers/Script/DynamicLibrary.hpp
+    Wrappers/Script/DynamicLibrary.hpp \
+    Wrappers/Script/Mono/MonoAssembly.hpp \
+    Wrappers/Script/Mono/MonoContext.hpp \
+    Wrappers/Script/Mono/MonoImage.hpp
 
 DISTFILES += \
 	README.md

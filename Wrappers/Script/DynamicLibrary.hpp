@@ -17,6 +17,8 @@ extern "C" {
 #error "OS not supported!"
 #endif
 }
+namespace MH33 {
+namespace Script {
 
 class DynamicLibrary
 {
@@ -37,4 +39,6 @@ public:
 	bool isValid() const;
 };
 
+}
+}
 #endif // DYNAMICLIBRARY_HPP
