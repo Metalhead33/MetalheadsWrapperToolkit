@@ -40,10 +40,22 @@ SOURCES += \
     Wrappers/Script/Mono/MonoImage.cpp
 
 HEADERS += \
-    Io/FIO.hpp \
-    Io/FIOSys.hpp \
+    Abstract/Global.hpp \
+    Abstract/Graphics/ArrayTexture1D.hpp \
+    Abstract/Graphics/ArrayTexture2D.hpp \
+    Abstract/Graphics/PrimitiveType.hpp \
+    Abstract/Graphics/Streamable.hpp \
+    Abstract/Graphics/StreamingTexture1D.hpp \
+    Abstract/Graphics/StreamingTexture2D.hpp \
+    Abstract/Graphics/StreamingTexture3D.hpp \
+    Abstract/Graphics/Texture.hpp \
+    Abstract/Graphics/Texture1D.hpp \
+    Abstract/Graphics/Texture2D.hpp \
+    Abstract/Graphics/Texture3D.hpp \
+    Abstract/Graphics/UniversalHandle.hpp \
+    Abstract/Io/FIO.hpp \
+    Abstract/Io/FIOSys.hpp \
     Io/StdStream.hpp \
-    Io/Global.hpp \
     Wrappers/Audio/AudioPacket.hpp \
     Wrappers/Audio/ModuleRenderer.hpp \
     Wrappers/Audio/Resampler.hpp \

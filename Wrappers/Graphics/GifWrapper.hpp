@@ -1,6 +1,6 @@
 #ifndef MHGIFWRAPPER_HPP
 #define MHGIFWRAPPER_HPP
-#include "../../Io/FIO.hpp"
+#include "../../Abstract/Io/FIO.hpp"
 #include <vector>
 #include <cstdint>
 namespace MH33 {
